@@ -136,6 +136,7 @@ function getLayersDuration(layers) {
 }
 
 // Moves layers from a master comp to a new precomp
+// TODO: Bug with the placement of AVLayers where av layers dont get placed at the proper in/out-points. I think it has something to do with the difference between start time and inPoint, maybe I can just use start time instead???
 function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
     var precompLabel = layers[0].label; // Store the group label for later use
     var originalInPoint = getMinInPoint(layers); // Store the min in-point of the layers for later use
@@ -170,6 +171,9 @@ function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
     // Set the work area of the precomp to exclude the handles
     precomp.workAreaStart = handleDuration;
     precomp.workAreaDuration = precomp.duration - (handleDuration * 2);
+    
+    // Flip the order of the layers in the precomp
+    invertLayerOrderInComp(precomp);
 
     // Remove original layers (from highest index to lowest to avoid index shifting)
     layerIndices.sort(function(a, b) { return b - a; }); // Sort descending
@@ -189,6 +193,15 @@ function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
     // "Crop" the precomp so that its handles are 'hidden'
     precompLayer.inPoint = originalInPoint;
     precompLayer.outPoint = originalOutPoint;
+}
+
+// Flips the order of layers in a comp
+function invertLayerOrderInComp(comp) {
+    // Loop through the layers and move them in reverse order
+    for (var i = 1; i <= comp.numLayers; i++) {
+        var layer = comp.layer(i);  // Get the current layer
+        layer.moveToBeginning();  // Move the layer to the top
+    }
 }
 
 // Returns the minimum in-point of a given array of layers
@@ -328,6 +341,168 @@ function makeFoldersForPrecomps(precomps) {
         
         // Move the precomp folder into the sections folder
         precompFolder.parentFolder = sectionsFolder;
+        
+        // Move any precomp assets into the precomp folder
+        relocatePrecompAssets(precomp, precompFolder); // TODO: Woooweee this is gonna be harder to make dynamic but we need to dooo itttttttt!
+    }
+}
+
+// Moves any layer assets in a precomp into a new directory
+function relocatePrecompAssets(precomp, directory) {
+    // Store a reference to the assets folder
+    var assetsFolder = getFolderInDirectory(directory, "Assets");
+    
+    // Iterate over all layers in the precomp
+    for(var i= 1; i < precomp.numLayers; i++) {
+        var layer = precomp.layer(i);
+        
+        // Test if the layer has a source
+        if(layerHasSource(layer)) {
+            var layerType = getLayerType(layer);
+            
+            switch(layerType) {
+                case "AVLayer":
+                    // Check what kind of avlayer it is and move it into the proper assets folder
+                    var layerSourceFileType = layer.source.file.fsName.split('.').pop().toLowerCase();
+                    if(layerSourceIsImage(layerSourceFileType)) {
+                        var imageAssetFolder = getFolderInDirectory(assetsFolder, "Images");
+                        layer.source.parentFolder = imageAssetFolder;
+                    } else {
+                        var footageAssetFolder = getFolderInDirectory(assetsFolder, "Footage");
+                        layer.source.parentFolder = footageAssetFolder;
+                    }
+                    break;
+                case "SolidLayer":
+                case "ThreeDModelLayer":
+                    // Move both of these sources into the misc asset folder
+                    var miscAssetFolder = getFolderInDirectory(assetsFolder, "Misc");
+                    layer.source.parentFolder = miscAssetFolder;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+// Returns the type of an input layer as a string
+function getLayerType(layer) {
+    if (layer instanceof AVLayer) {
+        return "AVLayer";
+    } else if (layer instanceof TextLayer) {
+        return "TextLayer";
+    } else if (layer instanceof ShapeLayer) {
+        return "ShapeLayer";
+    } else if (layer instanceof CameraLayer) {
+        return "CameraLayer";
+    } else if (layer instanceof LightLayer) {
+        return "LightLayer";
+    } else if (layer instanceof ThreeDModelLayer) {
+        return "ThreeDModelLayer";
+    } else {
+        return "UnknownLayer";
+    }
+}
+
+// Returns true if the layer is of a type that has a source
+function layerHasSource(layer) {
+    var layerType = getLayerType(layer);
+    
+    switch(layerType) {
+        case "AVLayer":
+        case "ThreeDModelLayer":
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Tests a string to determine if it is a file type that is an image format
+function layerSourceIsImage(fileType) {
+    // From the full list here:
+    // https://helpx.adobe.com/after-effects/kb/supported-file-formats.html
+    switch(fileType) {
+        // Illustrator
+        case "ai":
+        case "eps":
+        case "ps":
+        // PDF
+        case "pdf":
+        // Photoshop
+        case "psd":
+        // Bitmap
+        case "bmp":
+        case "rle":
+        case "dib":
+        // Camera Raw
+        case "tif":
+        case "tiff":
+        case "crw":
+        case "nef":
+        case "raf":
+        case "orf":
+        case "mrw":
+        case "dcr":
+        case "mos":
+        case "raw":
+        case "pef":
+        case "srf":
+        case "dng":
+        case "x3f":
+        case "cr2":
+        case "erf":
+        case "sr2":
+        case "mfw":
+        case "mef":
+        case "arw":
+        // Cineon
+        case "cin":
+        case "dpx":
+        // CompuServe GIF
+        case "gif":
+        // RLA/RPF
+        case "rla":
+        case "rpf":
+        // ElectricImage
+        case "img":
+        case "ei":
+        // IFF
+        case "iff":
+        case "tdi":
+        // JPEG
+        case "jpg":
+        case "jpe":
+        case "jpeg":
+        // HEIF
+        case "heif":
+        // Maya
+        case "ma":
+        // EXR
+        case "exr":
+        case "sxr":
+        case "mxr":
+        // PCX
+        case "pcx":
+        // PNG
+        case "png":
+        // HDR
+        case "hdr":
+        case "rgbe":
+        case "xyze":
+        // SGI
+        case "sgi":
+        case "bw":
+        case "rgb":
+        // Softimage
+        case "pic":
+        // Targa
+        case "tga":
+        case "vda":
+        case "icb":
+        case "vst":
+            return true;
+        default:
+            return false;
     }
 }
 

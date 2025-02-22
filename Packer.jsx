@@ -153,8 +153,11 @@ function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
         // Get a reference to the freshly copied layer
         var precompLayer = precomp.layer(1);
         
+        // We need to 'square' the difference between the start time of the layer and the inPoint of the layer, we are expecting them to be identical but when they are not we need to add the difference to the new startTime
+        var startPointDifference = masterComp.layer(layer.index).startTime - masterComp.layer(layer.index).inPoint;
+        
         // Set the start time of the layer to the proper start time in the new precomp
-        precompLayer.startTime = (precompLayer.inPoint - originalInPoint) + handleDuration;
+        precompLayer.startTime = (precompLayer.inPoint - originalInPoint) + handleDuration + startPointDifference;
         
         // The following two if statements extend all layers at the start/end of the precomp into their respective handles
         // If this layer is at the end of the in-handle, extend the layer all the way to the left of the precomp

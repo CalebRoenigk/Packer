@@ -4,6 +4,8 @@
 // Bless this code
 // Caleb Roenigk - 2025
 
+// TODO: Make a freakin PANEL!!!!!!!
+
 // Init function, checks that there is an active comp to run packer on
 function init() {
     if(app.project.activeItem instanceof CompItem) {

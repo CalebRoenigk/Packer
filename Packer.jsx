@@ -161,9 +161,9 @@ function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
         }
     }
     
-    // Drop markers denoting the handle positions into the precomp
-    addMarkerToComp(precomp, "In", handleDuration, 1); // In Marker
-    addMarkerToComp(precomp, "Out", precomp.duration - handleDuration, 2); // Out Marker
+    // Set the work area of the precomp to exclude the handles
+    precomp.workAreaStart = handleDuration;
+    precomp.workAreaDuration = precomp.duration - (handleDuration * 2);
 
     // Remove original layers (from highest index to lowest to avoid index shifting)
     layerIndices.sort(function(a, b) { return b - a; }); // Sort descending
@@ -211,20 +211,6 @@ function getMaxOutPoint(layers) {
     }
 
     return maxOutPoint;
-}
-
-// Adds a marker to the passed comp
-// markerComment is the name of the marker
-// markerTime is the time of the marker in the comp
-function addMarkerToComp(comp, markerComment, markerTime, markerLabel) {
-    // Create a new marker
-    var newMarker = new MarkerValue(markerComment);
-    
-    // Set the label color of the marker
-    newMarker.label = markerLabel || 0;
-
-    // Add the marker to the composition's marker property at the specified time
-    comp.markerProperty.setValueAtTime(markerTime, newMarker);
 }
 
 init();

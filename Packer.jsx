@@ -37,6 +37,12 @@ function packComp(comp, precompHandleDuration) {
     
     // Precompose each group of layers
     var precomps = precompLayerGroups(groupedLayers, precompHandleDuration);
+    
+    // Create a folder structure for all precomps to exist in
+    createCompsFolder();
+    
+    // TODO: Move all precomps into their own folders within the newly created folder structure
+    makeFoldersForPrecomps(precomps);
 
     // Close the packer undo group
     app.endUndoGroup();
@@ -211,6 +217,118 @@ function getMaxOutPoint(layers) {
     }
 
     return maxOutPoint;
+}
+
+// Creates the main comps folder structure
+// Comps > Sections > (TEMPLATE)
+// TODO: Make this shit dynamic?
+function createCompsFolder() {
+    var proj = app.project; // Get the project
+    
+    // Create or find the comps folder
+    var compsFolder = getOrCreateFolderAtDirectory(proj.rootFolder, "Comps");
+    
+    // Create the sections folder
+    var sectionsFolder = getOrCreateFolderAtDirectory(compsFolder, "Sections");
+    sectionsFolder.parentFolder = compsFolder;
+    
+    // Create the section template
+    var existingTemplate = getFolderInDirectory(sectionsFolder, "<Section Name>"); // Check if there is a section template already in the sections folder
+    if(existingTemplate === null) {
+        // Section template doesn't exist
+        var sectionTemplate = createSectionTemplate();
+        sectionTemplate.parentFolder = sectionsFolder;
+    }
+}
+
+// Creates a section template folder group and returns a reference to the root template folder
+function createSectionTemplate() {
+    // TODO: Make this shit dynamic?
+    var proj = app.project; // Get the project
+
+    // Create the root folder
+    var rootTemplateFolder = proj.items.addFolder("<Section Name>");
+    
+    // Create the assets folder
+    var assetsFolder = proj.items.addFolder("Assets");
+    // Create all the subfolders for assets
+    var audioAssetsFolder = proj.items.addFolder("Audio");
+    var footageAssetsFolder = proj.items.addFolder("Footage");
+    var imagesAssetsFolder = proj.items.addFolder("Images");
+    var miscAssetsFolder = proj.items.addFolder("Misc");
+    
+    // Move the assets subfolders into assets
+    audioAssetsFolder.parentFolder = assetsFolder;
+    footageAssetsFolder.parentFolder = assetsFolder;
+    imagesAssetsFolder.parentFolder = assetsFolder;
+    miscAssetsFolder.parentFolder = assetsFolder;
+    
+    // Create the precomps folder
+    var precompsFolder = proj.items.addFolder("Precomps");
+    
+    // Move the assets and precomps folders into the root template folder
+    assetsFolder.parentFolder = rootTemplateFolder;
+    precompsFolder.parentFolder = rootTemplateFolder;
+    
+    return rootTemplateFolder;
+}
+
+// Creates a folder if none exists at the parent directory, if one does exist this function returns a reference to it instead
+function getOrCreateFolderAtDirectory(parentDirectory, folderName) {
+    var proj = app.project; // Get the project
+    
+    var folder = getFolderInDirectory(parentDirectory, folderName);
+    
+    if(folder === null) {
+        // The folder did not exist
+        // Create the folder
+        folder = proj.items.addFolder(folderName);
+        folder.parentFolder = parentDirectory; // Move the new folder into the parent directory
+    }
+    
+    return folder;
+}
+
+// Returns a reference to a folder if it exists in the directory, else returns null
+function getFolderInDirectory(directory, folderName) {
+    if(directory.numItems <= 0) {
+        return null;
+    }
+    
+    // Iterate over the items in the directory
+    for(var i= 1; i <= directory.numItems; i++) {
+        var item = directory.items[i];
+        
+        // Check if the item is a folder
+        if(item instanceof FolderItem) {
+            // Check the name of the folder
+            if(item.name === folderName) {
+                return item;
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Creates a folder for each precomp in the passed array
+// TODO: Make this use the template or make the folder creation dynamic somehow?
+function makeFoldersForPrecomps(precomps) {
+    // Get a reference to the sections folder
+    var sectionsFolder = getFolderInDirectory(getFolderInDirectory(app.project.rootFolder, "Comps"), "Sections"); // TODO: Make this dynamic?
+    
+    // Iterate over the precomps and make their folders
+    for(var i=0; i < precomps.length; i++) {
+        var precomp = precomps[i];
+        
+        // Create a new precomp folder
+        var precompFolder = createSectionTemplate(); // TODO: Make this dynamic?
+        precompFolder.name = precomp.name;
+        precomp.parentFolder = precompFolder;
+        
+        // Move the precomp folder into the sections folder
+        precompFolder.parentFolder = sectionsFolder;
+    }
 }
 
 init();

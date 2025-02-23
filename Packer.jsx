@@ -50,11 +50,14 @@ handleDuration.onChange = function() {
 
 // PALETTE
 // =======
+// TODO: Make fancy custom button?
 var packButton = palette.add("button", undefined, undefined, {name: "packButton"});
 packButton.text = "Pack it!";
 packButton.onClick = function() {
     init();
 };
+
+// TODO: At some point it would be nice to make a lil site like VOID has: https://battleaxe.co/void
 
 palette.show();
 

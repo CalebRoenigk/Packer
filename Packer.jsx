@@ -4,15 +4,69 @@
 // Bless this code
 // Caleb Roenigk - 2025
 
+var handleLength = 1.0; // Global handle duration value
+
+/*
+Code for Import https://scriptui.joonas.me — (Triple click to select): 
+{"activeId":4,"items":{"item-0":{"id":0,"type":"Dialog","parentId":false,"style":{"enabled":true,"varName":"","windowType":"Palette","creationProps":{"su1PanelCoordinates":false,"maximizeButton":false,"minimizeButton":false,"independent":false,"closeButton":true,"borderless":false,"resizeable":false},"text":"Packer","preferredSize":[200,0],"margins":12,"orientation":"row","spacing":16,"alignChildren":["center","top"]}},"item-1":{"id":1,"type":"EditText","parentId":2,"style":{"enabled":true,"varName":"handleDuration","creationProps":{"noecho":false,"readonly":false,"multiline":false,"scrollable":false,"borderless":false,"enterKeySignalsOnChange":false},"softWrap":false,"text":"1","justify":"center","preferredSize":[32,0],"alignment":null,"helpTip":"duration of the handles in seconds"}},"item-2":{"id":2,"type":"Group","parentId":0,"style":{"enabled":true,"varName":"handleGroup","preferredSize":[0,0],"margins":0,"orientation":"row","spacing":4,"alignChildren":["left","fill"],"alignment":null}},"item-3":{"id":3,"type":"StaticText","parentId":2,"style":{"enabled":true,"varName":"handleLabel","creationProps":{"truncate":"none","multiline":false,"scrolling":false},"softWrap":false,"text":"Handles (s)","justify":"left","preferredSize":[0,0],"alignment":null,"helpTip":null}},"item-4":{"id":4,"type":"Button","parentId":0,"style":{"enabled":true,"varName":"packButton","text":"Pack it!","justify":"center","preferredSize":[0,0],"alignment":null,"helpTip":null}}},"order":[0,2,3,1,4],"settings":{"importJSON":true,"indentSize":false,"cepExport":false,"includeCSSJS":true,"showDialog":true,"functionWrapper":false,"afterEffectsDockable":false,"itemReferenceList":"None"}}
+*/
+
+// PALETTE
+// =======
+var palette = new Window("palette");
+palette.text = "Packer";
+palette.preferredSize.width = 200;
+palette.orientation = "row";
+palette.alignChildren = ["center","top"];
+palette.spacing = 16;
+palette.margins = 12;
+
+// HANDLEGROUP
+// ===========
+var handleGroup = palette.add("group", undefined, {name: "handleGroup"});
+handleGroup.orientation = "row";
+handleGroup.alignChildren = ["left","fill"];
+handleGroup.spacing = 4;
+handleGroup.margins = 0;
+
+var handleLabel = handleGroup.add("statictext", undefined, undefined, {name: "handleLabel"});
+handleLabel.text = "Handles (s)";
+
+var handleDuration = handleGroup.add('edittext {justify: "center", properties: {name: "handleDuration"}}');
+handleDuration.helpTip = "duration of the handles in seconds";
+handleDuration.text = "1";
+handleDuration.preferredSize.width = 32;
+handleDuration.onChange = function() {
+    // When handle changes, update the global variable
+    handleLength = parseFloat(handleDuration.text);
+
+    // Check if conversion was successful
+    if (isNaN(userInput)) {
+        handleLength = 1.0;
+    }
+    
+    // TODO: Save the handle changes to a user settings file, also TODO: When starting up the script, load the user setting into this box
+};
+
+// PALETTE
+// =======
+var packButton = palette.add("button", undefined, undefined, {name: "packButton"});
+packButton.text = "Pack it!";
+packButton.onClick = function() {
+    init();
+};
+
+palette.show();
+
 // TODO: Make a freakin PANEL!!!!!!!
 
 // Init function, checks that there is an active comp to run packer on
 function init() {
     if(app.project.activeItem instanceof CompItem) {
-        packComp(app.project.activeItem, 1);
+        packComp(app.project.activeItem, handleLength);
     } else {
         // Active project has no active comp
-        alert("You must have a comp open to use Packer.");
+        alert("You must have a comp selected to use Packer.");
     }
 }
 
@@ -43,7 +97,7 @@ function packComp(comp, precompHandleDuration) {
     // Create a folder structure for all precomps to exist in
     createCompsFolder();
     
-    // TODO: Move all precomps into their own folders within the newly created folder structure
+    // Move all precomps into their own folders within the newly created folder structure
     makeFoldersForPrecomps(precomps);
 
     // Close the packer undo group
@@ -138,7 +192,6 @@ function getLayersDuration(layers) {
 }
 
 // Moves layers from a master comp to a new precomp
-// TODO: Bug with the placement of AVLayers where av layers dont get placed at the proper in/out-points. I think it has something to do with the difference between start time and inPoint, maybe I can just use start time instead???
 function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
     var precompLabel = layers[0].label; // Store the group label for later use
     var originalInPoint = getMinInPoint(layers); // Store the min in-point of the layers for later use
@@ -510,5 +563,3 @@ function layerSourceIsImage(fileType) {
             return false;
     }
 }
-
-init();

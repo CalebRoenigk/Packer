@@ -110,35 +110,25 @@ function loadPackerFolderSettings() {
 
     // Check for the packer_folder_settings
     var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
+    var folderSettings = {};
     if(!packerFolderSettings.exists) {
         // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file?
         alert("Please add packer_folder_settings.txt to the scripts folder: " + containingFolder.absoluteURI + "/");
     } else {
-        var fileContents = [];
         packerFolderSettings.open("r");
-        while(!packerFolderSettings.eof) {
-            fileContents.push(packerFolderSettings.readln().toString());
-        }
-
-        var comp = app.project.activeItem; // Get the active composition
-
-        if (comp instanceof CompItem) {
-            // Create a new text layer
-            var textLayer = comp.layers.addText();
-
-            // Access the Source Text property and set its value
-            var textProp = textLayer.property("Source Text");
-            var textDocument = textProp.value;
-            textDocument.text = fileContents.join("/n"); // Set the new text
-            textProp.setValue(textDocument); // Apply the text update
-        } else {
-            alert("Please select a composition first.");
-        }
+        var jsonString = packerFolderSettings.read(); // Read file content as string
+        packerFolderSettings.close();
+        folderSettings = eval("(" + jsonString + ")");
     }
-
-    // When the file is read, store an understanding of which folders in the template correspond to which asset type
-    // Store a project reference to the folder for new packed sections
+    
+    var rootStructure = folderSettings["root_structure"];
+    // TODO: Iterate over the root structure and create folders, return reference to section location?
+    // TODO: Store a reference to the section location
+    var packerSectionLocation = ""; // TODO: Need to move this to global variable
+    
+    // TODO: Insert the packer section template into the section location
     // Store the layout of a section template for use when creating the sections
+    // Store an understanding of which folders in the template correspond to which asset type
 }
 
 // Runs packer

@@ -1,7 +1,7 @@
 ﻿// Clutter everywhere
 // Messy Messy Messy
 // But no more! (hopefully)
-// Bless this code
+// Bless this code 🙏
 // Caleb Roenigk - 2025
 
 var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!

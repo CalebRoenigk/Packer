@@ -84,6 +84,8 @@ function loadSettings() {
         // User has custom settings
         settings['handleLength'] = parseFloat(app.settings.getSetting("Packer", "handleLength"));
     }
+
+    loadCurrentFilePath();
     
     return settings;
 }
@@ -92,6 +94,16 @@ function loadSettings() {
 // hL: the duration of each handle on a packed precomp
 function saveUserSettings(hL) {
     app.settings.saveSetting("Packer", "handleLength", String(hL));
+}
+
+// TODO: Work out a way to use a custom folder structure
+// TESTING FOR NOW
+function loadCurrentFilePath() {
+    var thisScript = new File($.fileName);
+    var containingFolder = new Folder(thisScript.parent.absoluteURI);
+    alert("This script is in " + containingFolder.absoluteURI);
+    
+    
 }
 
 // Runs packer

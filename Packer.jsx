@@ -212,7 +212,7 @@ function findFolderFromPath(path, startDirectory) {
 }
 
 // Creates the template folder and returns a reference to the section template TODO: Fix the 'new' aspect
-function createSectionTemplateNew(overwriteName) {
+function createSectionTemplate(overwriteName) {
     var newSectionTemplateData = deepCopy(sectionTemplateData);
     newSectionTemplateData.name = overwriteName;
     // Create the section folders
@@ -447,48 +447,7 @@ function createCompsFolder() {
     // Iterate over the root structure and create folders and store a reference to the section location
     sectionFolder = createRootFolders(rootStructure);
     // Insert the packer section template into the section location
-    createSectionTemplateNew(sectionTemplateData.name);
-}
-
-function getNumOfKeys(obj) {
-    var count = 0;
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            count++;
-        }
-    }
-    return count;
-}
-
-// Creates a section template folder group and returns a reference to the root template folder
-function createSectionTemplate() {
-    var proj = app.project; // Get the project
-
-    // Create the root folder
-    var rootTemplateFolder = proj.items.addFolder("<Section Name>");
-    
-    // Create the assets folder
-    var assetsFolder = proj.items.addFolder("Assets");
-    // Create all the subfolders for assets
-    var audioAssetsFolder = proj.items.addFolder("Audio");
-    var footageAssetsFolder = proj.items.addFolder("Footage");
-    var imagesAssetsFolder = proj.items.addFolder("Images");
-    var miscAssetsFolder = proj.items.addFolder("Misc");
-    
-    // Move the assets subfolders into assets
-    audioAssetsFolder.parentFolder = assetsFolder;
-    footageAssetsFolder.parentFolder = assetsFolder;
-    imagesAssetsFolder.parentFolder = assetsFolder;
-    miscAssetsFolder.parentFolder = assetsFolder;
-    
-    // Create the precomps folder
-    var precompsFolder = proj.items.addFolder("Precomps");
-    
-    // Move the assets and precomps folders into the root template folder
-    assetsFolder.parentFolder = rootTemplateFolder;
-    precompsFolder.parentFolder = rootTemplateFolder;
-    
-    return rootTemplateFolder;
+    createSectionTemplate(sectionTemplateData.name);
 }
 
 // Creates a folder if none exists at the parent directory, if one does exist this function returns a reference to it instead
@@ -537,7 +496,7 @@ function makeFoldersForPrecomps(precomps) {
         var precomp = precomps[i];
         
         // Create a new precomp folder
-        var precompFolder = createSectionTemplateNew(precomp.name);
+        var precompFolder = createSectionTemplate(precomp.name);
         precomp.parentFolder = precompFolder;
         
         // Move the precomp folder into the sections folder

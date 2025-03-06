@@ -4,7 +4,7 @@
 // Bless this code
 // Caleb Roenigk - 2025
 
-var handleLength = 1.0; // Global handle duration value
+var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!
 
 /*
 Code for Import https://scriptui.joonas.me — (Triple click to select): 
@@ -34,18 +34,17 @@ handleLabel.text = "Handles (s)";
 
 var handleDuration = handleGroup.add('edittext {justify: "center", properties: {name: "handleDuration"}}');
 handleDuration.helpTip = "duration of the handles in seconds";
-handleDuration.text = "1";
+handleDuration.text = handleLength;
 handleDuration.preferredSize.width = 32;
 handleDuration.onChange = function() {
     // When handle changes, update the global variable
     handleLength = parseFloat(handleDuration.text);
-
     // Check if conversion was successful
-    if (isNaN(userInput)) {
+    if (isNaN(handleDuration.text)) {
         handleLength = 1.0;
     }
-    
-    // TODO: Save the handle changes to a user settings file, also TODO: When starting up the script, load the user setting into this box
+    // Save the handle changes to settings
+    saveUserSettings(handleLength);
 };
 
 // PALETTE
@@ -71,6 +70,28 @@ function init() {
         // Active project has no active comp
         alert("You must have a comp selected to use Packer.");
     }
+}
+
+// Returns settings if the user has any for packer, if not, returns defaults
+function loadSettings() {
+    // Default settings
+    var settings = {
+        handleLength: 1
+    };
+    
+    // Check if user has custom settings
+    if(app.settings.haveSetting("Packer", "handleLength")) {
+        // User has custom settings
+        settings['handleLength'] = parseFloat(app.settings.getSetting("Packer", "handleLength"));
+    }
+    
+    return settings;
+}
+
+// Saves user settings
+// hL: the duration of each handle on a packed precomp
+function saveUserSettings(hL) {
+    app.settings.saveSetting("Packer", "handleLength", String(hL));
 }
 
 // Runs packer

@@ -88,7 +88,8 @@ function loadSettings() {
         settings['handleLength'] = parseFloat(app.settings.getSetting("Packer", "handleLength"));
     }
 
-    loadCurrentFilePath();
+    // Load Packer Folder Settings
+    loadPackerFolderSettings();
     
     return settings;
 }
@@ -97,13 +98,6 @@ function loadSettings() {
 // hL: the duration of each handle on a packed precomp
 function saveUserSettings(hL) {
     app.settings.saveSetting("Packer", "handleLength", String(hL));
-}
-
-// TODO: Work out a way to use a custom folder structure
-// TESTING FOR NOW
-function loadCurrentFilePath() {
-    alert("Running load current file path");
-    loadPackerFolderSettings();
 }
 
 // Loads the packer folder settings
@@ -164,12 +158,8 @@ function createRootFolders(rootStructure) {
 }
 
 // Iterative folder creator from object
-function createFolders(folderData, rootFolder, log) {
+function createFolders(folderData, rootFolder) {
     // Create a folder with the folder name
-    if(log) {
-        alert("Creating folder named: " + folderData.name);
-        alert("RootFolder: " + rootFolder.name);
-    }
     var folder = getOrCreateFolderAtDirectory(rootFolder, folderData.name);
     
     // Create folders for each folder within folder data
@@ -227,7 +217,7 @@ function findFolderFromPath(path, startDirectory) {
 // Creates the template folder and returns a reference to the section template TODO: Fix the 'new' aspect
 function createSectionTemplateNew() {
     // Create the section folders
-    createFolders(sectionTemplateData, sectionFolder, true)
+    return createFolders(sectionTemplateData, sectionFolder);
 }
 
 // Runs packer

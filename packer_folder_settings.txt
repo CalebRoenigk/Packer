@@ -5,7 +5,7 @@
             folders: [
                 {
                     name: "Sections",
-                    insert_precomps: true,
+                    insert_sections: true,
                     folders: []
                 }
             ]

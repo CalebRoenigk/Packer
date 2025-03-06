@@ -5,6 +5,7 @@
 // Caleb Roenigk - 2025
 
 var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!
+var sectionFolder = "";
 
 /*
 Code for Import https://scriptui.joonas.me — (Triple click to select): 
@@ -122,13 +123,103 @@ function loadPackerFolderSettings() {
     }
     
     var rootStructure = folderSettings["root_structure"];
-    // TODO: Iterate over the root structure and create folders, return reference to section location?
-    // TODO: Store a reference to the section location
-    var packerSectionLocation = ""; // TODO: Need to move this to global variable
+    // Iterate over the root structure and create folders and store a reference to the section location
+    sectionFolder = createRootFolders(rootStructure);
     
     // TODO: Insert the packer section template into the section location
     // Store the layout of a section template for use when creating the sections
     // Store an understanding of which folders in the template correspond to which asset type
+}
+
+// Creates the root folder structure
+function createRootFolders(rootStructure) {
+    if(!isArray(rootStructure)) {
+        alert("Packer Folder Settings Root Structure is malformed. Expected array for root structure");
+        return null; // TODO: Make sure there is catches down the road for null here, or maybe implement try/catch?
+    }
+    // Iterate over each top level item in the rootStructure
+    for(var i=0; i < rootStructure.length; i++) {
+        // Iterative folder creation
+        createFolders(rootStructure[i], app.project.rootFolder);
+    }
+    
+    // Find a reference to the insert_sections folder. If none found, return the root
+    // Create an array of folder names that path to the folder where sections are inserted
+    var foldersToSectionInsertion = getFolderNamesToTarget(rootStructure, [], "insert_sections", true);
+    
+    // Get the reference folder for insert_sections
+    var sectionInsertFolder = null;
+    if(foldersToSectionInsertion === null) {
+        // No folder found for insertion
+        sectionInsertFolder = app.project.rootFolder;
+    } else {
+        // Iterate over the array of folder names to find the folder
+        sectionInsertFolder = findFolderFromPath(foldersToSectionInsertion);
+    }
+    
+    return sectionInsertFolder;
+}
+
+// Iterative folder creator from object
+function createFolders(folderData, rootFolder) {
+    // Create a folder with the folder name
+    var folder = getOrCreateFolderAtDirectory(rootFolder, folderData.name);
+    
+    // Create folders for each folder within folder data
+    for(var i=0; i < folderData.folders.length; i++) {
+        createFolders(folderData.folders[i], folder);
+    }
+    
+    return folder;
+}
+
+// Returns a bool if the object is an array or not
+function isArray(obj) {
+    return obj && obj.constructor === Array;
+}
+
+// Returns an array of folder names towards a folder given a target property
+function getFolderNamesToTarget(folderData, path, targetPropertyName, targetPropertyValue) {
+    for (var i = 0; i < folderData.length; i++) {
+        var folder = folderData[i];
+        var newPath = path.concat(folder.name); // Add current folder to path
+
+        // If this folder has targetPropertyName and targetPropertyValue, return the path
+        if (folder[targetPropertyName] === targetPropertyValue) {
+            return newPath;
+        }
+
+        // Recursively search in subfolders
+        if (folder.folders && folder.folders.length > 0) {
+            var foundPath = getFolderNamesToTarget(folder.folders, newPath);
+            if (foundPath) {
+                return foundPath; // Return as soon as a valid path is found
+            }
+        }
+    }
+    return null; // No matching folder found
+}
+
+// Find a folder via a chain of folder names, returns a reference to the folder
+function findFolderFromPath(path) {
+    var currentFolder = app.project.rootFolder;
+    for(var i=0; i < path.length; i++) {
+        var foundFolder = getFolderInDirectory(currentFolder, path[i]);
+        
+        if(foundFolder !== null) {
+            currentFolder = foundFolder;
+        } else {
+            currentFolder = null;
+            break;
+        }
+    }
+    
+    return currentFolder;
+}
+
+// Returns a reference to a folder from a given name in a given folder in the project
+function findFolderInDirectory(directory, name) {
+    
 }
 
 // Runs packer

@@ -57,6 +57,7 @@ packButton.onClick = function() {
 };
 
 // TODO: At some point it would be nice to make a lil site like VOID has: https://battleaxe.co/void
+// TODO: Would be nice to add a lil help/info button like VOID has!
 
 palette.show();
 
@@ -99,11 +100,45 @@ function saveUserSettings(hL) {
 // TODO: Work out a way to use a custom folder structure
 // TESTING FOR NOW
 function loadCurrentFilePath() {
-    var thisScript = new File($.fileName);
-    var containingFolder = new Folder(thisScript.parent.absoluteURI);
-    alert("This script is in " + containingFolder.absoluteURI);
-    
-    
+    alert("Running load current file path");
+    loadPackerFolderSettings();
+}
+
+// Loads the packer folder settings
+function loadPackerFolderSettings() {
+    var containingFolder = new Folder(new File($.fileName).parent.absoluteURI);
+
+    // Check for the packer_folder_settings
+    var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
+    if(!packerFolderSettings.exists) {
+        // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file?
+        alert("Please add packer_folder_settings.txt to the scripts folder: " + containingFolder.absoluteURI + "/");
+    } else {
+        var fileContents = [];
+        packerFolderSettings.open("r");
+        while(!packerFolderSettings.eof) {
+            fileContents.push(packerFolderSettings.readln().toString());
+        }
+
+        var comp = app.project.activeItem; // Get the active composition
+
+        if (comp instanceof CompItem) {
+            // Create a new text layer
+            var textLayer = comp.layers.addText();
+
+            // Access the Source Text property and set its value
+            var textProp = textLayer.property("Source Text");
+            var textDocument = textProp.value;
+            textDocument.text = fileContents.join("/n"); // Set the new text
+            textProp.setValue(textDocument); // Apply the text update
+        } else {
+            alert("Please select a composition first.");
+        }
+    }
+
+    // When the file is read, store an understanding of which folders in the template correspond to which asset type
+    // Store a project reference to the folder for new packed sections
+    // Store the layout of a section template for use when creating the sections
 }
 
 // Runs packer
@@ -443,6 +478,7 @@ function makeFoldersForPrecomps(precomps) {
 
 // Moves any layer assets in a precomp into a new directory
 function relocatePrecompAssets(precomp, directory) {
+    // TODO: Move any layers of type "Comp" into the precomps directory!!!!
     // Store a reference to the assets folder
     var assetsFolder = getFolderInDirectory(directory, "Assets");
     

@@ -76,7 +76,7 @@ function init() {
 function loadSettings() {
     // Default settings
     var settings = {
-        handleLength: 1
+        handleLength: 1 // Default handle length
     };
     
     // Check if user has custom settings

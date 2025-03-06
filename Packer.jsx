@@ -211,7 +211,7 @@ function findFolderFromPath(path, startDirectory) {
     return currentFolder;
 }
 
-// Creates the template folder and returns a reference to the section template TODO: Fix the 'new' aspect
+// Creates the template folder and returns a reference to the section template
 function createSectionTemplate(overwriteName) {
     var newSectionTemplateData = deepCopy(sectionTemplateData);
     newSectionTemplateData.name = overwriteName;
@@ -489,7 +489,6 @@ function getFolderInDirectory(directory, folderName) {
 }
 
 // Creates a folder for each precomp in the passed array
-// TODO: Make this use the template or make the folder creation dynamic somehow?
 function makeFoldersForPrecomps(precomps) {
     // Iterate over the precomps and make their folders
     for(var i=0; i < precomps.length; i++) {
@@ -513,23 +512,38 @@ function relocatePrecompAssets(precomp, directory) {
     var assetFolders = getAssetFolders(directory);
 
     // Iterate over all layers in the precomp
-    for(var i= 1; i < precomp.numLayers; i++) {
+    for(var i= 1; i <= precomp.numLayers; i++) {
         var layer = precomp.layer(i);
         
         // Test if the layer has a source
         if(layerHasSource(layer)) {
             var layerType = getLayerType(layer);
-
-            // TODO: Move any layers of type "Comp" into the precomps directory!!!!
-            // TODO: Move audio into the correct folder!!!!
+            
             switch(layerType) {
                 case "AVLayer":
                     // Check what kind of avlayer it is and move it into the proper assets folder
-                    var layerSourceFileType = layer.source.file.fsName.split('.').pop().toLowerCase();
-                    if(layerSourceIsImage(layerSourceFileType)) {
-                        layer.source.parentFolder = assetFolders.image;
+                    // Check for comp first
+                    if(layer.source instanceof CompItem) {
+                        layer.source.parentFolder = assetFolders.comp;
                     } else {
-                        layer.source.parentFolder = assetFolders.footage;
+                        // Check for image next
+                        var layerSourceFileType = layer.source.file.fsName.split('.').pop().toLowerCase();
+                        if(layerSourceIsImage(layerSourceFileType)) {
+                            layer.source.parentFolder = assetFolders.image;
+                        } else {
+                            // Check for Audio
+                            if(layerSourceIsAudio(layerSourceFileType)) {
+                                layer.source.parentFolder = assetFolders.audio;
+                            } else {
+                                // Last specific check for footage
+                                if(layerSourceIsFootage(layerSourceFileType)) {
+                                    layer.source.parentFolder = assetFolders.footage;
+                                } else {
+                                    // Everything else goes into misc
+                                    layer.source.parentFolder = assetFolders.misc;
+                                }
+                            }
+                        }
                     }
                     break;
                 case "SolidLayer":
@@ -692,6 +706,85 @@ function layerSourceIsImage(fileType) {
         case "vda":
         case "icb":
         case "vst":
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Tests a string to determine if it is a file type that is an audio format
+function layerSourceIsAudio(fileType) {
+    // From the full list here:
+    // https://helpx.adobe.com/after-effects/kb/supported-file-formats.html
+    switch(fileType) {
+        // AAC
+        case "aac":
+        case "m4a":
+        // AIF
+        case "aif":
+        case "aiff":
+        // MP3
+        case "mp3":
+        case "mpeg":
+        // WAV
+        case "wav":
+        case "bwf":
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Tests a string to determine if it is a file type that is footage
+function layerSourceIsFootage(fileType) {
+    // From the full list here:
+    // https://helpx.adobe.com/after-effects/kb/supported-file-formats.html
+    switch(fileType) {
+        // RED
+        case "r3d":
+        // Canon EOS
+        case "crm":
+        // Sony
+        case "mxf":
+        // H.265
+        case "hevc":
+        // 3GPP
+        case "3gp":
+        case "3g2":
+        case "amc":
+        // Flash Player
+        case "swf":
+        // Flash Video
+        case "flv":
+        case "f4v":
+        // AVCHD
+        case "m2ts":
+        // H.264
+        case "m4v":
+        // MPEG-1
+        case "mpg":
+        case "mpe":
+        case "mpa":
+        case "mpv":
+        case "mod":
+        // MPEG-2
+        case "m2p":
+        case "m2v":
+        case "m2a":
+        case "m2t":
+        // MPEG-4
+        case "mp4":
+        // OMF
+        case "omf":
+        // Quicktime
+        case "mov":
+        // AVI
+        case "avi":
+        // Windows Media
+        case "wmv":
+        case "wma":
+        case "asf":
+        case "asx":
             return true;
         default:
             return false;

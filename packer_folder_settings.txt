@@ -16,6 +16,7 @@
         folders: [
             {
                 name: "Assets",
+                asset_type: "assets",
                 folders: [
                     {
                         name: "Audio",
@@ -34,7 +35,7 @@
                     },
                     {
                         name: "Misc",
-                        asset_types: "misc",
+                        asset_type: "misc",
                         folders: []
                     },
                 ]

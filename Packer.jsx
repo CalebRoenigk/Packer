@@ -5,8 +5,9 @@
 // Caleb Roenigk - 2025
 
 var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!
+var rootStructure = [];
 var sectionFolder = "";
-var sectionTemplateData = [];
+var sectionTemplateData = {};
 
 /*
 Code for Import https://scriptui.joonas.me — (Triple click to select): 
@@ -48,6 +49,8 @@ handleDuration.onChange = function() {
     // Save the handle changes to settings
     saveUserSettings(handleLength);
 };
+
+// TODO: Add option to number sections in order of appearance in timeline (as a checkbox?)
 
 // PALETTE
 // =======
@@ -117,32 +120,26 @@ function loadPackerFolderSettings() {
         folderSettings = eval("(" + jsonString + ")");
     }
     
-    var rootStructure = folderSettings["root_structure"];
-    // Iterate over the root structure and create folders and store a reference to the section location
-    sectionFolder = createRootFolders(rootStructure);
-    
-    // Insert the packer section template into the section location
+    rootStructure = folderSettings.root_structure;
     sectionTemplateData = folderSettings["section_template"];
-    createSectionTemplateNew();
-    
-    // TODO: After getting all this working, fix the folder creation of packer itself
 }
 
 // Creates the root folder structure
-function createRootFolders(rootStructure) {
-    if(!isArray(rootStructure)) {
+// rS: root structure
+function createRootFolders(rS) {
+    if(!isArray(rS)) {
         alert("Packer Folder Settings Root Structure is malformed. Expected array for root structure.");
         return app.project.rootFolder;
     }
     // Iterate over each top level item in the rootStructure
-    for(var i=0; i < rootStructure.length; i++) {
+    for(var i=0; i < rS.length; i++) {
         // Iterative folder creation
-        createFolders(rootStructure[i], app.project.rootFolder);
+        createFolders(rS[i], app.project.rootFolder);
     }
     
     // Find a reference to the insert_sections folder. If none found, return the root
     // Create an array of folder names that path to the folder where sections are inserted
-    var foldersToSectionInsertion = getFolderNamesToTarget(rootStructure, [], "insert_sections", true);
+    var foldersToSectionInsertion = getFolderNamesToTarget(rS, [], "insert_sections", true);
     
     // Get the reference folder for insert_sections
     var sectionInsertFolder = null;
@@ -188,7 +185,7 @@ function getFolderNamesToTarget(folderData, path, targetPropertyName, targetProp
 
         // Recursively search in subfolders
         if (folder.folders && folder.folders.length > 0) {
-            var foundPath = getFolderNamesToTarget(folder.folders, newPath);
+            var foundPath = getFolderNamesToTarget(folder.folders, newPath, targetPropertyName, targetPropertyValue);
             if (foundPath) {
                 return foundPath; // Return as soon as a valid path is found
             }
@@ -215,9 +212,11 @@ function findFolderFromPath(path, startDirectory) {
 }
 
 // Creates the template folder and returns a reference to the section template TODO: Fix the 'new' aspect
-function createSectionTemplateNew() {
+function createSectionTemplateNew(overwriteName) {
+    var newSectionTemplateData = deepCopy(sectionTemplateData);
+    newSectionTemplateData.name = overwriteName;
     // Create the section folders
-    return createFolders(sectionTemplateData, sectionFolder);
+    return createFolders(newSectionTemplateData, sectionFolder);
 }
 
 // Runs packer
@@ -244,6 +243,9 @@ function packComp(comp, precompHandleDuration) {
     // Precompose each group of layers
     var precomps = precompLayerGroups(groupedLayers, precompHandleDuration);
     
+    // For some reason we seem to have to hard reload the packer folder settings here :/
+    loadPackerFolderSettings();
+
     // Create a folder structure for all precomps to exist in
     createCompsFolder();
     
@@ -441,30 +443,25 @@ function getMaxOutPoint(layers) {
 }
 
 // Creates the main comps folder structure
-// Comps > Sections > (TEMPLATE)
-// TODO: Make this shit dynamic?
 function createCompsFolder() {
-    var proj = app.project; // Get the project
-    
-    // Create or find the comps folder
-    var compsFolder = getOrCreateFolderAtDirectory(proj.rootFolder, "Comps");
-    
-    // Create the sections folder
-    var sectionsFolder = getOrCreateFolderAtDirectory(compsFolder, "Sections");
-    sectionsFolder.parentFolder = compsFolder;
-    
-    // Create the section template
-    var existingTemplate = getFolderInDirectory(sectionsFolder, "<Section Name>"); // Check if there is a section template already in the sections folder
-    if(existingTemplate === null) {
-        // Section template doesn't exist
-        var sectionTemplate = createSectionTemplate();
-        sectionTemplate.parentFolder = sectionsFolder;
+    // Iterate over the root structure and create folders and store a reference to the section location
+    sectionFolder = createRootFolders(rootStructure);
+    // Insert the packer section template into the section location
+    createSectionTemplateNew(sectionTemplateData.name);
+}
+
+function getNumOfKeys(obj) {
+    var count = 0;
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            count++;
+        }
     }
+    return count;
 }
 
 // Creates a section template folder group and returns a reference to the root template folder
 function createSectionTemplate() {
-    // TODO: Make this shit dynamic?
     var proj = app.project; // Get the project
 
     // Create the root folder
@@ -535,32 +532,27 @@ function getFolderInDirectory(directory, folderName) {
 // Creates a folder for each precomp in the passed array
 // TODO: Make this use the template or make the folder creation dynamic somehow?
 function makeFoldersForPrecomps(precomps) {
-    // Get a reference to the sections folder
-    var sectionsFolder = getFolderInDirectory(getFolderInDirectory(app.project.rootFolder, "Comps"), "Sections"); // TODO: Make this dynamic?
-    
     // Iterate over the precomps and make their folders
     for(var i=0; i < precomps.length; i++) {
         var precomp = precomps[i];
         
         // Create a new precomp folder
-        var precompFolder = createSectionTemplate(); // TODO: Make this dynamic?
-        precompFolder.name = precomp.name;
+        var precompFolder = createSectionTemplateNew(precomp.name);
         precomp.parentFolder = precompFolder;
         
         // Move the precomp folder into the sections folder
-        precompFolder.parentFolder = sectionsFolder;
+        precompFolder.parentFolder = sectionFolder;
         
         // Move any precomp assets into the precomp folder
-        relocatePrecompAssets(precomp, precompFolder); // TODO: Woooweee this is gonna be harder to make dynamic but we need to dooo itttttttt!
+        relocatePrecompAssets(precomp, precompFolder);
     }
 }
 
 // Moves any layer assets in a precomp into a new directory
 function relocatePrecompAssets(precomp, directory) {
-    // TODO: Move any layers of type "Comp" into the precomps directory!!!!
-    // Store a reference to the assets folder
-    var assetsFolder = getFolderInDirectory(directory, "Assets");
-    
+    // Store a reference to each folder that corresponds to an asset type using asset data
+    var assetFolders = getAssetFolders(directory);
+
     // Iterate over all layers in the precomp
     for(var i= 1; i < precomp.numLayers; i++) {
         var layer = precomp.layer(i);
@@ -568,30 +560,62 @@ function relocatePrecompAssets(precomp, directory) {
         // Test if the layer has a source
         if(layerHasSource(layer)) {
             var layerType = getLayerType(layer);
-            
+
+            // TODO: Move any layers of type "Comp" into the precomps directory!!!!
+            // TODO: Move audio into the correct folder!!!!
             switch(layerType) {
                 case "AVLayer":
                     // Check what kind of avlayer it is and move it into the proper assets folder
                     var layerSourceFileType = layer.source.file.fsName.split('.').pop().toLowerCase();
                     if(layerSourceIsImage(layerSourceFileType)) {
-                        var imageAssetFolder = getFolderInDirectory(assetsFolder, "Images");
-                        layer.source.parentFolder = imageAssetFolder;
+                        layer.source.parentFolder = assetFolders.image;
                     } else {
-                        var footageAssetFolder = getFolderInDirectory(assetsFolder, "Footage");
-                        layer.source.parentFolder = footageAssetFolder;
+                        layer.source.parentFolder = assetFolders.footage;
                     }
                     break;
                 case "SolidLayer":
                 case "ThreeDModelLayer":
                     // Move both of these sources into the misc asset folder
-                    var miscAssetFolder = getFolderInDirectory(assetsFolder, "Misc");
-                    layer.source.parentFolder = miscAssetFolder;
+                    layer.source.parentFolder = assetFolders.misc;
                     break;
                 default:
                     break;
             }
         }
     }
+}
+
+// Returns an object with references to each asset folder in the given directory using the section template data
+function getAssetFolders(directory) {
+    // Audio
+    var audioPath = getFolderNamesToTarget(sectionTemplateData.folders, [], "asset_type", "audio");
+    var audioFolder = findFolderFromPath(audioPath, directory);
+    
+    // Footage
+    var footagePath = getFolderNamesToTarget(sectionTemplateData.folders, [], "asset_type", "footage");
+    var footageFolder = findFolderFromPath(footagePath, directory);
+
+    // Image
+    var imagePath = getFolderNamesToTarget(sectionTemplateData.folders, [], "asset_type", "image");
+    var imageFolder = findFolderFromPath(imagePath, directory);
+
+    // Misc
+    var miscPath = getFolderNamesToTarget(sectionTemplateData.folders, [], "asset_type", "misc");
+    var miscFolder = findFolderFromPath(miscPath, directory);
+
+    // Comp
+    var compPath = getFolderNamesToTarget(sectionTemplateData.folders, [], "asset_type", "comp");
+    var compFolder = findFolderFromPath(compPath, directory);
+    
+    var assetFoldersReference = {
+        audio: audioFolder,
+        footage: footageFolder,
+        image: imageFolder,
+        misc: miscFolder,
+        comp: compFolder
+    }
+    
+    return assetFoldersReference;
 }
 
 // Returns the type of an input layer as a string
@@ -713,4 +737,31 @@ function layerSourceIsImage(fileType) {
         default:
             return false;
     }
+}
+
+// Deep copies an input object
+function deepCopy(obj) {
+    // If the value is primitive (null, number, string, boolean), return as is
+    if (obj === null || typeof obj !== "object") {
+        return obj;
+    }
+
+    // If it's an array, copy each item recursively
+    if (isArray(obj)) {
+        var arrCopy = [];
+        for (var i = 0; i < obj.length; i++) {
+            arrCopy[i] = deepCopy(obj[i]);
+        }
+        return arrCopy;
+    }
+
+    // If it's an object, copy each property recursively
+    var objCopy = {};
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            objCopy[key] = deepCopy(obj[key]);
+        }
+    }
+
+    return objCopy;
 }

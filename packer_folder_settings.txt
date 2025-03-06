@@ -11,7 +11,7 @@
             ]
         }
     ],
-    precomp_template: {
+    section_template: {
         name: "<Section Name>",
         folders: [
             {

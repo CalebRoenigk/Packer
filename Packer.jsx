@@ -6,6 +6,7 @@
 
 var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!
 var sectionFolder = "";
+var sectionTemplateData = [];
 
 /*
 Code for Import https://scriptui.joonas.me — (Triple click to select): 
@@ -126,16 +127,18 @@ function loadPackerFolderSettings() {
     // Iterate over the root structure and create folders and store a reference to the section location
     sectionFolder = createRootFolders(rootStructure);
     
-    // TODO: Insert the packer section template into the section location
-    // Store the layout of a section template for use when creating the sections
-    // Store an understanding of which folders in the template correspond to which asset type
+    // Insert the packer section template into the section location
+    sectionTemplateData = folderSettings["section_template"];
+    createSectionTemplateNew();
+    
+    // TODO: After getting all this working, fix the folder creation of packer itself
 }
 
 // Creates the root folder structure
 function createRootFolders(rootStructure) {
     if(!isArray(rootStructure)) {
-        alert("Packer Folder Settings Root Structure is malformed. Expected array for root structure");
-        return null; // TODO: Make sure there is catches down the road for null here, or maybe implement try/catch?
+        alert("Packer Folder Settings Root Structure is malformed. Expected array for root structure.");
+        return app.project.rootFolder;
     }
     // Iterate over each top level item in the rootStructure
     for(var i=0; i < rootStructure.length; i++) {
@@ -154,15 +157,19 @@ function createRootFolders(rootStructure) {
         sectionInsertFolder = app.project.rootFolder;
     } else {
         // Iterate over the array of folder names to find the folder
-        sectionInsertFolder = findFolderFromPath(foldersToSectionInsertion);
+        sectionInsertFolder = findFolderFromPath(foldersToSectionInsertion, app.project.rootFolder);
     }
     
     return sectionInsertFolder;
 }
 
 // Iterative folder creator from object
-function createFolders(folderData, rootFolder) {
+function createFolders(folderData, rootFolder, log) {
     // Create a folder with the folder name
+    if(log) {
+        alert("Creating folder named: " + folderData.name);
+        alert("RootFolder: " + rootFolder.name);
+    }
     var folder = getOrCreateFolderAtDirectory(rootFolder, folderData.name);
     
     // Create folders for each folder within folder data
@@ -201,8 +208,8 @@ function getFolderNamesToTarget(folderData, path, targetPropertyName, targetProp
 }
 
 // Find a folder via a chain of folder names, returns a reference to the folder
-function findFolderFromPath(path) {
-    var currentFolder = app.project.rootFolder;
+function findFolderFromPath(path, startDirectory) {
+    var currentFolder = startDirectory;
     for(var i=0; i < path.length; i++) {
         var foundFolder = getFolderInDirectory(currentFolder, path[i]);
         
@@ -217,9 +224,10 @@ function findFolderFromPath(path) {
     return currentFolder;
 }
 
-// Returns a reference to a folder from a given name in a given folder in the project
-function findFolderInDirectory(directory, name) {
-    
+// Creates the template folder and returns a reference to the section template TODO: Fix the 'new' aspect
+function createSectionTemplateNew() {
+    // Create the section folders
+    createFolders(sectionTemplateData, sectionFolder, true)
 }
 
 // Runs packer

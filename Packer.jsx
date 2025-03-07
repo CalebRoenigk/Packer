@@ -50,8 +50,6 @@ handleDuration.onChange = function() {
     saveUserSettings(handleLength);
 };
 
-// TODO: Add option to number sections in order of appearance in timeline (as a checkbox?)
-
 // PALETTE
 // =======
 // TODO: Make fancy custom button?
@@ -111,17 +109,30 @@ function loadPackerFolderSettings() {
     var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
     var folderSettings = {};
     if(!packerFolderSettings.exists) {
-        // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file?
+        // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file? (Make a function to create a txt file with the defaults?)
         alert("Please add packer_folder_settings.txt to the scripts folder: " + containingFolder.absoluteURI + "/");
     } else {
         packerFolderSettings.open("r");
         var jsonString = packerFolderSettings.read(); // Read file content as string
         packerFolderSettings.close();
-        folderSettings = eval("(" + jsonString + ")");
+        // Here we just check to confirm the folder settings are being read correctly! (Returning null if the folder settings do not get read correctly)
+        try {
+            folderSettings = eval("(" + jsonString + ")");
+            if (!(typeof folderSettings === "object" && folderSettings !== null)) {
+                alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+                return false;
+            }
+        } catch (e) {
+            alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+            return false;
+        }
+        
     }
     
     rootStructure = folderSettings.root_structure;
     sectionTemplateData = folderSettings["section_template"];
+    
+    return true;
 }
 
 // Creates the root folder structure
@@ -244,7 +255,12 @@ function packComp(comp, precompHandleDuration) {
     var precomps = precompLayerGroups(groupedLayers, precompHandleDuration);
     
     // For some reason we seem to have to hard reload the packer folder settings here :/
-    loadPackerFolderSettings();
+    var loadedSettings = loadPackerFolderSettings();
+    if(!loadedSettings) {
+        // If settings didn't load, just exit the packer program
+        alert("Aborting Process!");
+        return;
+    }
 
     // Create a folder structure for all precomps to exist in
     createCompsFolder();
@@ -314,7 +330,6 @@ function precomposeLayers(layers, handleDuration) {
     var comp = app.project.activeItem;
     
     // Use the name of the first layer as the precomp name
-    // TODO: Maybe use the format <first layer name ... last layer name> instead?
     var precompName = layers[0].name;
     
     // Calculate the duration of the new precomp

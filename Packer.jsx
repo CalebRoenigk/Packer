@@ -109,24 +109,28 @@ function loadPackerFolderSettings() {
     var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
     var folderSettings = {};
     if(!packerFolderSettings.exists) {
-        // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file? (Make a function to create a txt file with the defaults?)
         alert("Please add packer_folder_settings.txt to the scripts folder: " + containingFolder.absoluteURI + "/");
-    } else {
-        packerFolderSettings.open("r");
-        var jsonString = packerFolderSettings.read(); // Read file content as string
-        packerFolderSettings.close();
-        // Here we just check to confirm the folder settings are being read correctly! (Returning null if the folder settings do not get read correctly)
-        try {
-            folderSettings = eval("(" + jsonString + ")");
-            if (!(typeof folderSettings === "object" && folderSettings !== null)) {
-                alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
-                return false;
-            }
-        } catch (e) {
+        // TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file? (Make a function to create a txt file with the defaults?)
+        // packerFolderSettings = createDefaultFolderSettings();
+        // if(packerFolderSettings === null) {
+        //     return false;
+        // }
+    }
+
+    // Read the folder settings
+    packerFolderSettings.open("r");
+    var jsonString = packerFolderSettings.read(); // Read file content as string
+    packerFolderSettings.close();
+    // Here we just check to confirm the folder settings are being read correctly! (Returning null if the folder settings do not get read correctly)
+    try {
+        folderSettings = eval("(" + jsonString + ")");
+        if (!(typeof folderSettings === "object" && folderSettings !== null)) {
             alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
             return false;
         }
-        
+    } catch (e) {
+        alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+        return false;
     }
     
     rootStructure = folderSettings.root_structure;
@@ -831,4 +835,22 @@ function deepCopy(obj) {
     }
 
     return objCopy;
+}
+
+// Creates the default packer_folder_settings.txt, returns reference to the file
+function createDefaultFolderSettings() {
+    // Check that files can be written
+    if (!app.preferences.getPrefAsLong("Main Pref Section", "Pref_SCRIPTING_FILE_NETWORK_SECURITY")) {
+        var osName = $.os.toLowerCase();
+
+        if (osName.indexOf("windows") !== -1) {
+            alert("Please enable Allow Script to Write Files and Access Network in Edit > Preferences > Scripting & Expressions");
+        } else if (osName.indexOf("mac") !== -1) {
+            alert("Please enable Allow Script to Write Files and Access Network in After Effects > Preferences > Scripting & Expressions");
+        } else {
+            alert("Please enable Allow Script to Write Files and Access Network");
+        }
+        
+        return null;
+    }
 }

@@ -14,8 +14,6 @@ Code for Import https://scriptui.joonas.me — (Triple click to select):
 {"activeId":4,"items":{"item-0":{"id":0,"type":"Dialog","parentId":false,"style":{"enabled":true,"varName":"","windowType":"Palette","creationProps":{"su1PanelCoordinates":false,"maximizeButton":false,"minimizeButton":false,"independent":false,"closeButton":true,"borderless":false,"resizeable":false},"text":"Packer","preferredSize":[200,0],"margins":12,"orientation":"row","spacing":16,"alignChildren":["center","top"]}},"item-1":{"id":1,"type":"EditText","parentId":2,"style":{"enabled":true,"varName":"handleDuration","creationProps":{"noecho":false,"readonly":false,"multiline":false,"scrollable":false,"borderless":false,"enterKeySignalsOnChange":false},"softWrap":false,"text":"1","justify":"center","preferredSize":[32,0],"alignment":null,"helpTip":"duration of the handles in seconds"}},"item-2":{"id":2,"type":"Group","parentId":0,"style":{"enabled":true,"varName":"handleGroup","preferredSize":[0,0],"margins":0,"orientation":"row","spacing":4,"alignChildren":["left","fill"],"alignment":null}},"item-3":{"id":3,"type":"StaticText","parentId":2,"style":{"enabled":true,"varName":"handleLabel","creationProps":{"truncate":"none","multiline":false,"scrolling":false},"softWrap":false,"text":"Handles (s)","justify":"left","preferredSize":[0,0],"alignment":null,"helpTip":null}},"item-4":{"id":4,"type":"Button","parentId":0,"style":{"enabled":true,"varName":"packButton","text":"Pack it!","justify":"center","preferredSize":[0,0],"alignment":null,"helpTip":null}}},"order":[0,2,3,1,4],"settings":{"importJSON":true,"indentSize":false,"cepExport":false,"includeCSSJS":true,"showDialog":true,"functionWrapper":false,"afterEffectsDockable":false,"itemReferenceList":"None"}}
 */
 
-// TODO: BUG FOUND! Seems that audio/video don't properly align in precomps. Check this out in Packer - Walkthru and troubleshoot!
-
 // PALETTE
 // =======
 var palette = new Window("palette");
@@ -54,7 +52,6 @@ handleDuration.onChange = function() {
 
 // PALETTE
 // =======
-// TODO: Make fancy custom button?
 var packButton = palette.add("button", undefined, undefined, {name: "packButton"});
 packButton.text = "Pack it!";
 packButton.onClick = function() {
@@ -377,27 +374,30 @@ function moveLayersToPrecomp(masterComp, precomp, layers, handleDuration) {
         layerIndices.push(layer.index);
 
         // Make a copy of the current layer and move it into the new precomp
-        masterComp.layer(layer.index).copyToComp(precomp);
+        var originalLayer = masterComp.layer(layer.index);
+        originalLayer.copyToComp(precomp);
         
         // Get a reference to the freshly copied layer
         var precompLayer = precomp.layer(1);
         
-        // We need to 'square' the difference between the start time of the layer and the inPoint of the layer, we are expecting them to be identical but when they are not we need to add the difference to the new startTime
-        var startPointDifference = masterComp.layer(layer.index).startTime - masterComp.layer(layer.index).inPoint;
-        
         // Set the start time of the layer to the proper start time in the new precomp
-        precompLayer.startTime = (precompLayer.inPoint - originalInPoint) + handleDuration + startPointDifference;
+        precompLayer.startTime -= originalInPoint - handleDuration;
         
+        // TODO: OK. So heres the rub. AE Sucks sometimes. I can't for the life of me figure out what is going on here. Ideally I want to have all layers at the edges of a precomp extend themselves into the handles. This code worked when it was sourceless layers. But layers like audio and video seem to create endless problems. I think its because I don't understand the differences between startTime and inPoint but they dont seem to mean the same things as in AE UI.... So for now, this feature is disabled until I can rework it!
+        // var shiftedStart = 0;
         // The following two if statements extend all layers at the start/end of the precomp into their respective handles
         // If this layer is at the end of the in-handle, extend the layer all the way to the left of the precomp
-        if(precompLayer.startTime <= handleDuration) {
-            precompLayer.inPoint = 0;
-        }
+        // if(precompLayer.inPoint <= handleDuration) {
+        //     // Here we need to extend the layer's time as far into the handle as possible
+        //     // Start time is where the layer begins in relation to 0 in the precomp
+        //     shiftedStart = Math.max(precompLayer.startTime, 0);
+        //     precompLayer.inPoint = Math.min(precompLayer.inPoint, 0);
+        // }
 
-        // If this layer ends at the start of the out-handle, extend the layer all the way to the right of the precomp
-        if(precompLayer.outPoint >= precomp.duration - handleDuration) {
-            precompLayer.outPoint = precomp.duration;
-        }
+        // // If this layer ends at the start of the out-handle, extend the layer all the way to the right of the precomp
+        // if(precompLayer.outPoint >= precomp.duration - handleDuration) {
+        //     precompLayer.outPoint = precomp.duration;
+        // }
     }
     
     // Set the work area of the precomp to exclude the handles

@@ -133,6 +133,10 @@ function loadPackerFolderSettings() {
         return false;
     }
     
+    // TODO: Validation of the folder settings (see two notes below)
+    // TODO: We need to run a check to ensure there is a folder where sections are to be inserted
+    // TODO: We need to run a check on the section template data to ensure there is an asset folder of each type
+    
     rootStructure = folderSettings.root_structure;
     sectionTemplateData = folderSettings["section_template"];
     

@@ -3,6 +3,7 @@
 // But no more! (hopefully)
 // Bless this code 🙏
 // Caleb Roenigk - 2025
+// Learn more about this script at: www.nMotion.me/packer
 
 var handleLength = loadSettings().handleLength; // Global handle duration value, loads custom or default setting!
 var rootStructure = [];

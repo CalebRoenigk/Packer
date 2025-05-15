@@ -10,6 +10,29 @@ var rootStructure = [];
 var sectionFolder = "";
 var sectionTemplateData = {};
 
+// Dockable Panel Setup
+function createDockableUI(thisObj) {
+    var dialog =
+        thisObj instanceof Panel
+            ? thisObj
+            : new Window("window", undefined, undefined, { resizeable: true });
+    dialog.onResizing = dialog.onResize = function() {
+        this.layout.resize();
+    };
+    return dialog;
+}
+
+function showWindow(myWindow) {
+    if (myWindow instanceof Window) {
+        myWindow.center();
+        myWindow.show();
+    }
+    if (myWindow instanceof Panel) {
+        myWindow.layout.layout(true);
+        myWindow.layout.resize();
+    }
+}
+
 /*
 Code for Import https://scriptui.joonas.me — (Triple click to select): 
 {"activeId":4,"items":{"item-0":{"id":0,"type":"Dialog","parentId":false,"style":{"enabled":true,"varName":"","windowType":"Palette","creationProps":{"su1PanelCoordinates":false,"maximizeButton":false,"minimizeButton":false,"independent":false,"closeButton":true,"borderless":false,"resizeable":false},"text":"Packer","preferredSize":[200,0],"margins":12,"orientation":"row","spacing":16,"alignChildren":["center","top"]}},"item-1":{"id":1,"type":"EditText","parentId":2,"style":{"enabled":true,"varName":"handleDuration","creationProps":{"noecho":false,"readonly":false,"multiline":false,"scrollable":false,"borderless":false,"enterKeySignalsOnChange":false},"softWrap":false,"text":"1","justify":"center","preferredSize":[32,0],"alignment":null,"helpTip":"duration of the handles in seconds"}},"item-2":{"id":2,"type":"Group","parentId":0,"style":{"enabled":true,"varName":"handleGroup","preferredSize":[0,0],"margins":0,"orientation":"row","spacing":4,"alignChildren":["left","fill"],"alignment":null}},"item-3":{"id":3,"type":"StaticText","parentId":2,"style":{"enabled":true,"varName":"handleLabel","creationProps":{"truncate":"none","multiline":false,"scrolling":false},"softWrap":false,"text":"Handles (s)","justify":"left","preferredSize":[0,0],"alignment":null,"helpTip":null}},"item-4":{"id":4,"type":"Button","parentId":0,"style":{"enabled":true,"varName":"packButton","text":"Pack it!","justify":"center","preferredSize":[0,0],"alignment":null,"helpTip":null}}},"order":[0,2,3,1,4],"settings":{"importJSON":true,"indentSize":false,"cepExport":false,"includeCSSJS":true,"showDialog":true,"functionWrapper":false,"afterEffectsDockable":false,"itemReferenceList":"None"}}
@@ -17,7 +40,7 @@ Code for Import https://scriptui.joonas.me — (Triple click to select):
 
 // PALETTE
 // =======
-var palette = new Window("palette");
+var palette = createDockableUI(this);
 palette.text = "Packer";
 palette.preferredSize.width = 200;
 palette.orientation = "row";
@@ -63,9 +86,11 @@ packButton.onClick = function() {
 // TODO: Would be nice to add a lil help/info button like VOID has!
 // TODO: Add keyboard support? Do we need headless like how VOID has?
 
-palette.show();
+// palette.show();
 
-// TODO: Make a freakin PANEL!!!!!!!
+//all code here
+
+showWindow(palette);
 
 // Init function, checks that there is an active comp to run packer on
 function init() {

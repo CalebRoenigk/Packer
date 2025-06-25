@@ -121,7 +121,14 @@ function Packer (thisObj) {
 
 	// Loads the packer folder settings
 	function loadPackerFolderSettings() {
-		var containingFolder = new Folder(new File($.fileName).parent.absoluteURI);
+		// TODO: Update this to be a folder in user data folder
+		var containingFolder = new Folder(Folder.userData.fullName + "/Packer");
+		
+		// Check for packer folder
+		if(!containingFolder.exists) {
+			alert("Please install Packer from AEScripts Installer or manually place a Folder named 'Packer' at " + Folder.userData.fullName + ". Be sure to include 'packer_folder_settings.txt' in this folder.");
+			return;
+		}
 
 		// Check for the packer_folder_settings
 		var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
@@ -133,6 +140,7 @@ function Packer (thisObj) {
 			// if(packerFolderSettings === null) {
 			//     return false;
 			// }
+			return;
 		}
 
 		// Read the folder settings
@@ -159,6 +167,8 @@ function Packer (thisObj) {
 		sectionTemplateData = folderSettings["section_template"];
 
 		return true;
+	}
+	
 	}
 
 	// Creates the root folder structure

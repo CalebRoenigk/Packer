@@ -108,7 +108,11 @@ function Packer (thisObj) {
 		}
 
 		// Load Packer Folder Settings
-		loadPackerFolderSettings();
+		var loadedSettings = loadPackerFolderSettings();
+		if(!loadedSettings) {
+			alert("Unable to load settings!");
+			return null;
+		}
 		
 		return settings;
 	}
@@ -121,55 +125,229 @@ function Packer (thisObj) {
 
 	// Loads the packer folder settings
 	function loadPackerFolderSettings() {
-		// TODO: Update this to be a folder in user data folder
-		var containingFolder = new Folder(Folder.userData.fullName + "/Packer");
-		
-		// Check for packer folder
-		if(!containingFolder.exists) {
-			alert("Please install Packer from AEScripts Installer or manually place a Folder named 'Packer' at " + Folder.userData.fullName + ". Be sure to include 'packer_folder_settings.txt' in this folder.");
-			return;
-		}
-
-		// Check for the packer_folder_settings
-		var packerFolderSettings = File(containingFolder.absoluteURI + "/packer_folder_settings.txt");
-		var folderSettings = {};
-		if(!packerFolderSettings.exists) {
-			alert("Please add packer_folder_settings.txt to the scripts folder: " + containingFolder.absoluteURI + "/");
-			// TODO: Maybe we make more of a soft fallback here so that if the file does not exist, it can make the default file? (Make a function to create a txt file with the defaults?)
-			// packerFolderSettings = createDefaultFolderSettings();
-			// if(packerFolderSettings === null) {
-			//     return false;
-			// }
-			return;
-		}
-
-		// Read the folder settings
-		packerFolderSettings.open("r");
-		var jsonString = packerFolderSettings.read(); // Read file content as string
-		packerFolderSettings.close();
-		// Here we just check to confirm the folder settings are being read correctly! (Returning null if the folder settings do not get read correctly)
-		try {
-			folderSettings = eval("(" + jsonString + ")");
-			if (!(typeof folderSettings === "object" && folderSettings !== null)) {
-				alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
-				return false;
-			}
-		} catch (e) {
-			alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+		if(!checkSecurityPrefEnabled()) {
+			alert("Please enable 'Allow Scripts to Write Files and Access Network' in Preferences > Scripting & Expressions.");
 			return false;
 		}
 
-		// TODO: Validation of the folder settings (see two notes below)
-		// TODO: We need to run a check to ensure there is a folder where sections are to be inserted
-		// TODO: We need to run a check on the section template data to ensure there is an asset folder of each type
-		// TODO: Might be best to run all validation checks in a single function "validate packer settings" with a series of flags that alert the user if they missed assigning any folders
+		// Get the current packer settings
+		var packerSettingsFolder = createSystemFolder("Packer", Folder.userData.fullName);
+		var packerSettingsPath = packerSettingsFolder.fullName + "/packer_folder_settings.txt";
+		var packerSettingsData = readUserDataFromFile(packerSettingsPath);
 
-		rootStructure = folderSettings.root_structure;
-		sectionTemplateData = folderSettings["section_template"];
+		if(packerSettingsData == null) {
+			// Create default settings
+			var defaultPackerSettings = '{\n' +
+				'    root_structure: [\n' +
+				'        {\n' +
+				'            name: "Comps",\n' +
+				'            folders: [\n' +
+				'                {\n' +
+				'                    name: "Sections",\n' +
+				'                    insert_sections: true,\n' +
+				'                    folders: []\n' +
+				'                }\n' +
+				'            ]\n' +
+				'        }\n' +
+				'    ],\n' +
+				'    section_template: {\n' +
+				'        name: "<Section Name>",\n' +
+				'        folders: [\n' +
+				'            {\n' +
+				'                name: "Assets",\n' +
+				'                asset_type: "assets",\n' +
+				'                folders: [\n' +
+				'                    {\n' +
+				'                        name: "Audio",\n' +
+				'                        asset_type: "audio",\n' +
+				'                        folders: []\n' +
+				'                    },\n' +
+				'                    {\n' +
+				'                        name: "Footage",\n' +
+				'                        asset_type: "footage",\n' +
+				'                        folders: []\n' +
+				'                    },\n' +
+				'                    {\n' +
+				'                        name: "Images",\n' +
+				'                        asset_type: "image",\n' +
+				'                        folders: []\n' +
+				'                    },\n' +
+				'                    {\n' +
+				'                        name: "Misc",\n' +
+				'                        asset_type: "misc",\n' +
+				'                        folders: []\n' +
+				'                    },\n' +
+				'                ]\n' +
+				'            },\n' +
+				'            {\n' +
+				'                name: "Precomps",\n' +
+				'                asset_type: "comp",\n' +
+				'                folders: []\n' +
+				'            }\n' +
+				'        ]\n' +
+				'    }\n' +
+				'}';
+			alert("Creating packer settings");
+			alert(defaultPackerSettings)
+			packerSettingsData = writeUserDataToFile(packerSettingsPath, defaultPackerSettings);
+		}
+
+		// Parse the settings into a JSON Object
+		var packerSettingsParsed = parsePackerSettings(packerSettingsData);
+		
+		// Validation of the folder settings
+		var validSettings = isPackerFolderSettingsValid(packerSettingsParsed);
+		if(!validSettings) {
+			return false;
+		}
+		
+		rootStructure = packerSettingsParsed.root_structure;
+		sectionTemplateData = packerSettingsParsed["section_template"];
 
 		return true;
 	}
 	
+	// Validates that the packer folder settings have all folders that are needed to function
+	function isPackerFolderSettingsValid(settings) {
+		var flaggedErrors = [];
+		
+		// Root Structure
+		if(!("root_structure" in settings)) {
+			// No root structure
+			flaggedErrors.push("Missing root_structure");
+		}
+
+		// Section Template
+		if(!("section_template" in settings)) {
+			// No section template
+			flaggedErrors.push("Missing section_template");
+		}
+		
+		// Check for insert sections
+		if(!containsKeyValueDeep(settings.root_structure, "insert_sections", true)) {
+			// No insert sections
+			flaggedErrors.push("root_structure does not have a folder with property: 'insert_sections: true'");
+		}
+		
+		// Check for asset type folders within section template
+		var propsToFind = [{key: 'asset_type', value: 'assets'}, {key: 'asset_type', value: 'audio'}, {key: 'asset_type', value: 'footage'}, {key: 'asset_type', value: 'image'}, {key: 'asset_type', value: 'misc'}, {key: 'asset_type', value: 'comp'}];
+		for(var i=0; i < propsToFind.length; i++) {
+			if(!containsKeyValueDeep(settings.section_template, propsToFind[i].key, propsToFind[i].value)) {
+				// Missing one of the key/value pairs
+				flaggedErrors.push("section_template does not have an assets folder for assets of type: '" + propsToFind[i].value + "'");
+			}
+		}
+		
+		// If any errors found alert user then return false
+		if(flaggedErrors.length > 0) {
+			alert("The Packer Folder Settings has the following errors. Please fix to run Packer. \n" + flaggedErrors.join("\n"));
+			return false;
+		}
+		
+		return true;
+	}
+	
+	// Checks if an object has a key
+	function containsKeyValueDeep(obj, key, value) {
+		if (obj == null || typeof obj !== "object") return false;
+
+		for (var k in obj) {
+			if (obj.hasOwnProperty(k)) {
+				var v = obj[k];
+
+				if (k === key && v === value) {
+					return true;
+				}
+
+				if (typeof v === "object" && containsKeyValueDeep(v, key, value)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	// Reads user data from file
+	function readUserDataFromFile(filepath) {
+		var file = new File(filepath);
+
+		// Default encoding; can change
+		file.encoding = "UTF-8";
+
+		if (!file.exists) {
+			return null;
+		}
+
+		file.open();
+		var contents = file.read();
+		file.close();
+
+		return contents;
+	}
+
+	// Writes data to user data file
+	function writeUserDataToFile(filepath, data) {
+		var file = new File(filepath);
+
+		// Default encoding; can change
+		file.encoding = "UTF-8";
+
+		// Append to file
+		file.open("w");
+		var success = file.write(data);
+		file.close();
+
+		if (!success) {
+			throw "Could not write to file '" + String(file.fsName);
+		}
+
+		return data;
+	}
+
+	// Creates a folder at the specified path on the system
+	function createSystemFolder(folderName, path) {
+		// Create a new File object pointing to the desired folder
+		var targetFolder = new Folder(path + "/" + folderName);
+
+		// Check if it exists; if not, create it
+		if (!targetFolder.exists) {
+			var created = targetFolder.create();
+			if (!created) {
+				alert("Failed to create Packer folder at User Data path. Submit a ticket on AEScripts for help.");
+				return null;
+			}
+		}
+
+		return targetFolder;
+	}
+
+	// Returns "parsed JSON" from packer settings if possible
+	function parsePackerSettings(data) {
+		var folderSettings = {};
+		try {
+			folderSettings = eval("(" + data + ")");
+			if (!(typeof folderSettings === "object" && folderSettings !== null)) {
+				alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+				return null;
+			}
+		} catch (e) {
+			alert("packer_folder_settings.txt seems to have an error in it. Please fix!");
+			return null;
+		}
+
+		return folderSettings;
+	}
+
+	// Checks if the script can read/write
+	function checkSecurityPrefEnabled() {
+		// This checks if scripting file/network access is enabled
+		var isRWEnabled = app.preferences.getPrefAsLong(
+			"Main Pref Section",
+			"Pref_SCRIPTING_FILE_NETWORK_SECURITY"
+		);
+
+		return isRWEnabled === 1;
 	}
 
 	// Creates the root folder structure

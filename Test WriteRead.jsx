@@ -47,7 +47,7 @@
 	'            }\n' +
 	'        ]\n' +
 	'    }\n' +
-	'}'
+	'}';
 
 // Reads user data from file
 function readUserDataFromFile(filepath) {

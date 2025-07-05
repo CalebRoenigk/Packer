@@ -162,6 +162,7 @@ function Packer (thisObj) {
 		// TODO: Validation of the folder settings (see two notes below)
 		// TODO: We need to run a check to ensure there is a folder where sections are to be inserted
 		// TODO: We need to run a check on the section template data to ensure there is an asset folder of each type
+		// TODO: Might be best to run all validation checks in a single function "validate packer settings" with a series of flags that alert the user if they missed assigning any folders
 
 		rootStructure = folderSettings.root_structure;
 		sectionTemplateData = folderSettings["section_template"];

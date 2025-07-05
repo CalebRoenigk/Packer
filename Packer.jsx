@@ -187,8 +187,6 @@ function Packer (thisObj) {
 				'        ]\n' +
 				'    }\n' +
 				'}';
-			alert("Creating packer settings");
-			alert(defaultPackerSettings)
 			packerSettingsData = writeUserDataToFile(packerSettingsPath, defaultPackerSettings);
 		}
 
